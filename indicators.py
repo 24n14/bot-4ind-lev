@@ -1,11 +1,19 @@
 import numpy as np
 import talib
 import logging
+
+import config
 from config import INDICATOR_WEIGHTS
 
 logger = logging.getLogger(__name__)
-
-
+# переменные MACD
+fastperiod = config.FAST_macd
+slowperiod = config.SLOW_macd
+signalperiod = config.SIGNAL_macd
+# переменные STOCHASTIK
+fastk_period=config.FASTK
+slowk_period=config.SLOWK
+slowd_period=config.SLOWD
 def calculate_indicator_signals(high, low, close, volume):
     """
     Расчитывает сигналы для всех четырех индикаторов.
@@ -22,7 +30,7 @@ def calculate_indicator_signals(high, low, close, volume):
     signals = {}
 
     try:
-        # Индикатор #1: MA10/EMA50 Crossover
+        # Индикатор #1: MA1/EMA Crossover
         signals['ma_crossover'] = _get_ma_crossover_signal(close)
     except Exception as e:
         logger.warning(f"Ошибка при расчете MA crossover: {e}")
@@ -54,37 +62,38 @@ def calculate_indicator_signals(high, low, close, volume):
 
 def _get_ma_crossover_signal(close):
     """
-    Индикатор #1: Пересечение MA10 и EMA50
+    Индикатор #1: Пересечение MA и EMA
 
-    Бычий сигнал: MA10 пересекает EMA50 снизу вверх
-    Медвежий сигнал: MA10 пересекает EMA50 сверху вниз
+    Бычий сигнал: MA пересекает EMA снизу вверх
+    Медвежий сигнал: MA пересекает EMA сверху вниз
     """
-    if len(close) < 50:
+    # EMA самый большой период, берем его количество свечей для расчета
+    if len(close) < config.EMA:
         return None
 
-    ma10 = talib.SMA(close, timeperiod=10)
-    ema50 = talib.EMA(close, timeperiod=50)
+    ma = talib.SMA(close, timeperiod=config.MA)
+    ema = talib.EMA(close, timeperiod=config.EMA)
 
     # Берем последние 2 значения для определения пересечения
-    current_ma10 = ma10[-1]
-    current_ema50 = ema50[-1]
-    prev_ma10 = ma10[-2]
-    prev_ema50 = ema50[-2]
+    current_ma = ma[-1]
+    current_ema = ema[-1]
+    prev_ma = ma[-2]
+    prev_ema = ema[-2]
 
     # Проверяем пересечение
-    if np.isnan(current_ma10) or np.isnan(current_ema50) or \
-            np.isnan(prev_ma10) or np.isnan(prev_ema50):
+    if np.isnan(current_ma) or np.isnan(current_ema) or \
+            np.isnan(prev_ma) or np.isnan(prev_ema):
         return None
-
-    # MA10 было ниже EMA50, теперь выше → BULLISH
-    if prev_ma10 <= prev_ema50 and current_ma10 > current_ema50:
+        logger.warning(f"Ошибка не хватает данных для MA/EMA")
+    # MA было ниже EMA, теперь выше → BULLISH
+    if prev_ma <= prev_ema and current_ma > current_ema:
         return 'bullish'
 
-    # MA10 было выше EMA50, теперь ниже → BEARISH
-    elif prev_ma10 >= prev_ema50 and current_ma10 < current_ema50:
+    # MA было выше EMA, теперь ниже → BEARISH
+    elif prev_ma >= prev_ema and current_ma < current_ema:
         return 'bearish'
 
-    return None
+    return 'hold'
 
 
 def _get_macd_signal(close):
@@ -97,7 +106,7 @@ def _get_macd_signal(close):
     if len(close) < 26:
         return None
 
-    macd, signal_line, histogram = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+    macd, signal_line, histogram = talib.MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=slowperiod)
 
     # Берем последние 2 значения
     current_macd = macd[-1]
@@ -118,7 +127,7 @@ def _get_macd_signal(close):
     elif prev_macd >= prev_signal and current_macd < current_signal:
         return 'bearish'
 
-    return None
+    return 'hold'
 
 
 def _get_stochastic_signal(high, low, close):
@@ -131,7 +140,7 @@ def _get_stochastic_signal(high, low, close):
     if len(close) < 14:
         return None
 
-    slowk, slowd = talib.STOCH(high, low, close, fastk_period=14, slowk_period=3, slowd_period=3)
+    slowk, slowd = talib.STOCH(high, low, close, fastk_period=fastk_period, slowk_period=slowk_period, slowd_period=slowd_period)
 
     # Берем последние 2 значения
     current_k = slowk[-1]
@@ -151,7 +160,7 @@ def _get_stochastic_signal(high, low, close):
     elif prev_k >= prev_d and current_k < current_d and current_k > 80:
         return 'bearish'
 
-    return None
+    return 'hold'
 
 
 def _get_obv_signal(close, volume):
@@ -167,7 +176,7 @@ def _get_obv_signal(close, volume):
     obv = talib.OBV(close, volume)
 
     # Сглаживаем OBV для более стабильного сигнала
-    obv_sma = talib.SMA(obv, timeperiod=5)
+    obv_sma = talib.SMA(obv, timeperiod=config.SMA_obv)
 
     # Берем последние 2 значения
     current_obv = obv_sma[-1]
@@ -184,7 +193,7 @@ def _get_obv_signal(close, volume):
     elif current_obv < prev_obv:
         return 'bearish'
 
-    return None
+    return 'hold'
 
 
 def calculate_consensus_signal(signals):
@@ -199,10 +208,12 @@ def calculate_consensus_signal(signals):
             consensus_signal: 'bullish', 'bearish', или 'hold'
             details: dict с детальной информацией о голосовании
     """
-
+    MIN_CONSENSUS_WEIGHT = config.MIN_CONSENSUS_WEIGHT  # Минимум 2 индикатора для сигнала
+    MIN_PARTICIPATION = config.MIN_PARTICIPATION  # Минимум 3 индикатора должны работать
     # Инициализируем счетчики
     bullish_weight = 0.0
     bearish_weight = 0.0
+    active_indicators = 0  # Счетчик работающих индикаторов (не None)
     details = {
         'votes': {},
         'weights_used': INDICATOR_WEIGHTS.copy(),
@@ -219,6 +230,12 @@ def calculate_consensus_signal(signals):
             'signal': signal,
             'weight': weight
         }
+        # None = индикатор не работает, пропускаем
+        if signal is None:
+            logger.warning(f"⚠️ {indicator_name}: None (индикатор не активен)")
+            continue
+        # Индикатор работает
+        active_indicators += 1
 
         if signal == 'bullish':
             bullish_weight += weight
@@ -233,21 +250,23 @@ def calculate_consensus_signal(signals):
     for ind_name, vote_info in details['votes'].items():
         logger.info(f"  {ind_name}: {vote_info['signal']} (вес: {vote_info['weight']})")
     logger.info(f"  BULLISH сумма: {bullish_weight} | BEARISH сумма: {bearish_weight}")
+    logger.info(f"  Активных индикаторов: {active_indicators}")
 
-    # Определяем результат на основе перевеса
-    if bullish_weight > bearish_weight:
+    # Проверяем, достаточно ли индикаторов работает
+    if active_indicators < MIN_PARTICIPATION:
+        consensus_signal = 'hold'
+        logger.info(f"⏸️  HOLD консенсус (недостаточно активных индикаторов: {active_indicators} < {MIN_PARTICIPATION})")
+    elif bullish_weight > bearish_weight and bullish_weight >= MIN_CONSENSUS_WEIGHT:
         consensus_signal = 'bullish'
         logger.info(f"✅ BULLISH консенсус ({bullish_weight} vs {bearish_weight})")
-    elif bearish_weight > bullish_weight:
+    elif bearish_weight > bullish_weight and bearish_weight >= MIN_CONSENSUS_WEIGHT:
         consensus_signal = 'bearish'
         logger.info(f"❌ BEARISH консенсус ({bearish_weight} vs {bullish_weight})")
     else:
-        # При равном весе - HOLD
         consensus_signal = 'hold'
-        logger.info(f"⏸️  HOLD консенсус (равное голосование: {bullish_weight})")
+        logger.info(f"⏸️  HOLD консенсус | B={bullish_weight} S={bearish_weight} | Мин.порог={MIN_CONSENSUS_WEIGHT}")
 
     details['consensus'] = consensus_signal
-
     return consensus_signal, details
 
 

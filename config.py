@@ -18,8 +18,8 @@ SYMBOL = 'BTC/USDT:USDT'
 CATEGORY = 'linear'
 AMOUNT = 0.01
 TIMEFRAME = '5m'
-LIMIT = 100
-LIMIT_CANDLES = 100
+LIMIT = 200
+LIMIT_CANDLES = 200 # должен быть больше чем параметры MA/EMA
 STOP_LOSS = 1
 TAKE_PROFIT = 2
 TRAILING_STOP_DISTANCE = 150
@@ -28,18 +28,33 @@ TPSL_SIZE = '50'
 in_position = False
 entry_price = 0.0
 LEVERAGE = 10
-#MIN_AMOUNT = 0.001
+MIN_AMOUNT = 0.001
 
 # ===== ПАРАМЕТРЫ АНАЛИЗА ДИВЕРГЕНЦИИ =====
-LOOKBACK = 50  # окно для анализа дивергенции
+
 MIN_CONFIDENCE = 0.5  # минимальная уверенность для входа
 MIN_CONFIDENCE_REVERSAL = 0.7  # уверенность для разворота позиции
 
-# ===== ПАРАМЕТРЫ ИНДИКАТОРОВ =====
+# ===== ПАРАМЕТРЫ OBV =====
 OBV_SMA_PERIOD = 5  # период сглажив��ния OBV
 EMA_50_PERIOD = 50  # период EMA для тренда
 ATR_PERIOD = 14  # период ATR для волатильности
-
+# ===== ПАРАМЕТРЫ MA/EMA =====
+MA = 20
+EMA = 100
+# ===== ПАРАМЕТРЫ MACD =====
+FAST_macd = 12
+SLOW_macd = 26
+SIGNAL_macd = 9
+# ===== ПАРАМЕТРЫ СТОХАСТИК =====
+FASTK = 14
+SLOWK = 3
+SLOWD = 3
+# ===== ПАРАМЕТРЫ OBV =====
+SMA_obv = 5
+# ===== ПАРАМЕТРЫ КОНСЕНСУСА =====
+MIN_CONSENSUS_WEIGHT = 2.0
+MIN_PARTICIPATION = 3
 # ===== КОЭФФИЦИЕНТЫ УВЕРЕННОСТИ =====
 CONF_PRICE_STRENGTH = 0.2  # макс балл за силу цены
 CONF_OBV_STRENGTH = 0.2  # макс балл за силу OBV
@@ -62,7 +77,7 @@ MIN_CANDLES = 100  # минимум свечей для анализа
 WAIT_RETRY_MAX = 3  # максимум попыток синхронизации
 
 INDICATOR_WEIGHTS = {
-    'ma_crossover': 1.0,      # Вес пересечения MA10/EMA50
+    'ma_crossover': 1.0,      # Вес пересечения MA/EMA
     'macd': 1.0,              # Вес MACD
     'stochastic': 1.0,        # Вес Stochastic
     'obv': 1.0                # Вес OBV тренда

@@ -13,7 +13,7 @@ logging.basicConfig(
     ]
 )
 
-logger = logging.getLogger('trading_bot')
+logger = logging.getLogger('start')
 
 # Отключаем чрезмерно подробные логи от библиотек
 logging.getLogger('ccxt').setLevel(logging.WARNING)

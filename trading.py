@@ -30,7 +30,7 @@ def main_trading_loop(exchange):
                     continue
 
                 # 2. Получаем данные (свеча уже закрыта)
-                logger.debug("📥 Загружаем OHLCV данные...")
+                #logger.debug("📥 Загружаем OHLCV данные...")
                 candles = exchange.fetch_ohlcv(
                     config.SYMBOL,
                     config.TIMEFRAME,
@@ -63,10 +63,10 @@ def main_trading_loop(exchange):
                 logger.debug(f"📊 Данные загружены: {len(close)} свечей, последняя цена: {close[-1]:.2f}")
 
                 # 6. Генерируем сигнал
-                logger.debug("🔬 Анализируем дивергенцию...")
+
                 consensus_signal, details = get_indicator_analysis(high, low, close, volume)
 
-                logger.debug(f"Результат анализа: signal={signal}")
+                #logger.debug(f"Результат анализа: signal={consensus_signal}")
 
                 # 7. Проверяем наличие позиций
                 has_pos, pos_data = has_open_position(exchange, config.SYMBOL)
@@ -75,14 +75,14 @@ def main_trading_loop(exchange):
                 if not has_pos:
                     if signal is not None:
                         logger.info(f"📊 Сигнал: {signal.upper()}")
-                        logger.info(f"   Детали: {details}")
+                        #logger.debug(f"   Детали: {details}")
 
                         if signal == 'bullish':
                             logger.info(f"🟢 ВХОД В LONG")
-                            execute_trade(exchange, symbol, 'buy', amount)
+                            execute_trade(exchange, symbol, 'buy')
                         elif signal == 'bearish':
                             logger.info(f"🔴 ВХОД В SHORT")
-                            execute_trade(exchange, symbol, 'sell', amount)
+                            execute_trade(exchange, symbol, 'sell')
                         else:
                             logger.info(f"⚠️HOLD")
                     else:
@@ -95,10 +95,12 @@ def main_trading_loop(exchange):
                         logger.info(f"🔄 Обнаружен сигнал разворота")
                         if signal == 'bullish':
                             logger.info(f"🟢 ВХОД В LONG")
-                            execute_trade(exchange, symbol, 'buy', amount)
+                            execute_trade(exchange, symbol, 'buy')
+                            execute_trade(exchange, symbol, 'buy')
                         elif signal == 'bearish':
                             logger.info(f"🔴 ВХОД В SHORT")
-                            execute_trade(exchange, symbol, 'sell', amount)
+                            execute_trade(exchange, symbol, 'sell')
+                            execute_trade(exchange, symbol, 'sell')
                         # Здесь логика закрытия и открытия противоположной позиции
                     else:
                         logger.debug(f"⌛ Позиция открыта ({pos_data['side'].upper()}), ожидаем...")

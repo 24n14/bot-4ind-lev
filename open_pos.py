@@ -1,6 +1,6 @@
 import logging
 import config
-import time
+#import time
 from pybit.unified_trading import HTTP
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,6 @@ def execute_trade(exchange, symbol, side):
         balance_data = exchange.fetch_balance()
         currency = 'USDC' if 'USDC' in symbol else 'USDT'
         balance_before = balance_data[currency]['free']
-
         logger.info(f"💰 Свободный баланс: {balance_before:.2f} {currency}")
 
         if balance_before < config.MIN_AMOUNT:
@@ -53,7 +52,7 @@ def execute_trade(exchange, symbol, side):
             logger.error(f"❌ Сумма {amount * entry_price:.2f} < минимум {min_cost}")
             return False
 
-        # === 3. Расчет цен ===
+        # === 3. Расчет TP, SL, TS  ===
         sl_percent = config.STOP_LOSS
         tp_percent = config.TAKE_PROFIT
         tpsl_size = config.TPSL_SIZE
@@ -97,29 +96,34 @@ def execute_trade(exchange, symbol, side):
         logger.info(f"📈 {side.upper()} {amount} {symbol} @ {entry_price:.2f}")
 
         # === 5. Установка трейлинг-стопа через Pybit ===
-        time.sleep(0.5)
+        #time.sleep(0.5)
+        from check_pos import has_open_position
+        has_position, position_data = has_open_position(exchange, symbol)
+        if has_position:
+            logger.info(f"✅ Позиция подтверждена: {position_data['contracts']} контрактов {position_data['side']} будем устанавливать TS")
+            try:
+                bybit_symbol = symbol.replace('/', '').split(':')[0]
 
-        try:
-            bybit_symbol = symbol.replace('/', '').split(':')[0]
+                ts_response = session_bybit.set_trading_stop(
+                    category="linear",
+                    symbol=bybit_symbol,
+                    positionIdx=0,
+                    trailingStop=str(config.TRAILING_STOP_DISTANCE),
+                    activePrice=str(ts_trigger_price),
+                    #tpslMode="Partial"
+                )
 
-            ts_response = session_bybit.set_trading_stop(
-                category="linear",
-                symbol=bybit_symbol,
-                positionIdx=0,
-                trailingStop=str(config.TRAILING_STOP_DISTANCE),
-                activePrice=str(ts_trigger_price),
-                #tpslMode="Partial"
-            )
+                if ts_response.get("retCode") == 0:
+                    remaining = 100 - int(tpsl_size)
+                    logger.info(
+                        f"✅ Трейлинг-стоп на {remaining}% | Дист: {config.TRAILING_STOP_DISTANCE} | Актив: {ts_trigger_price:.2f}")
+                else:
+                    logger.error(f"❌ Ошибка трейлинг-стопа: {ts_response.get('retMsg')}")
 
-            if ts_response.get("retCode") == 0:
-                remaining = 100 - int(tpsl_size)
-                logger.info(
-                    f"✅ Трейлинг-стоп на {remaining}% | Дист: {config.TRAILING_STOP_DISTANCE} | Актив: {ts_trigger_price:.2f}")
-            else:
-                logger.error(f"❌ Ошибка трейлинг-стопа: {ts_response.get('retMsg')}")
-
-        except Exception as ts_error:
-            logger.error(f"❌ Исключение трейлинг-стопа: {ts_error}")
+            except Exception as ts_error:
+                logger.error(f"❌ Исключение трейлинг-стопа: {ts_error}")
+        else:
+            logger.warning(f"⚠️ Позиция не найдена! Трейлинг-стоп НЕ установлен")
 
         return True
 
