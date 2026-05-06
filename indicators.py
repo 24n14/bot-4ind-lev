@@ -1,11 +1,9 @@
 import numpy as np
 import talib
-#import logging
-
 import config
 from config import INDICATOR_WEIGHTS
 from log import logger
-#logger = logging.getLogger(__name__)
+
 # переменные MACD
 fastperiod = config.FAST_macd
 slowperiod = config.SLOW_macd
@@ -74,32 +72,69 @@ def _get_macd_signal(close):
     """
     Индикатор #2: MACD
 
-    Бычий сигнал: MACD пересекает сигнальную линию снизу вверх
-    Медвежий сигнал: MACD пересекает сигнальную линию сверху вниз
+    Приоритет сигналов:
+    1. Пересечения (самый сильный сигнал)
+    2. Направление гистограммы + положение MACD
+    3. Положение MACD относительно нуля и сигнальной
     """
     if len(close) < 26:
         return None
 
-    macd, signal_line, histogram = talib.MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)
+    macd, signal_line, histogram = talib.MACD(
+        close,
+        fastperiod=fastperiod,
+        slowperiod=slowperiod,
+        signalperiod=signalperiod
+    )
 
-    # Берем последние 2 значения
+    # Берём последние значения
     current_macd = macd[-1]
     current_signal = signal_line[-1]
+    current_histogram = histogram[-1]
     prev_macd = macd[-2]
     prev_signal = signal_line[-2]
+    prev_histogram = histogram[-2]
 
-    # Проверяем пересечение
+    # Проверяем на NaN
     if np.isnan(current_macd) or np.isnan(current_signal) or \
             np.isnan(prev_macd) or np.isnan(prev_signal):
         return None
 
-    # MACD было ниже сигнальной линии, теперь выше → BULLISH
+    # 1. ПРОВЕРКА ПЕРЕСЕЧЕНИЙ (наивысший приоритет)
+    # MACD пересекает сигнальную снизу вверх → BULLISH
     if prev_macd <= prev_signal and current_macd > current_signal:
         return 'bullish'
 
-    # MACD было выше сигнальной линии, теперь ниже → BEARISH
-    elif prev_macd >= prev_signal and current_macd < current_signal:
+    # MACD пересекает сигнальную сверху вниз → BEARISH
+    if prev_macd >= prev_signal and current_macd < current_signal:
         return 'bearish'
+
+    # 2. ПРОВЕРКА ТРЕНДА ПО ГИСТОГРАММЕ (второй приоритет)
+    # Гистограмма растёт → BULLISH (если MACD выше сигнальной)
+    if current_histogram > prev_histogram and current_macd > current_signal:
+        return 'bullish'
+
+    # Гистограмма падает → BEARISH (если MACD ниже сигнальной)
+    if current_histogram < prev_histogram and current_macd < current_signal:
+        return 'bearish'
+
+    # 3. ПРОВЕРКА ПОЛОЖЕНИЯ MACD (третий приоритет)
+    # MACD выше сигнальной И выше нуля И гистограмма положительная → BULLISH
+    if current_macd > current_signal and current_macd > 0 and current_histogram > 0:
+        return 'bullish'
+
+    # MACD ниже сигнальной И ниже нуля И гистограмма отрицательная → BEARISH
+    if current_macd < current_signal and current_macd < 0 and current_histogram < 0:
+        return 'bearish'
+
+    # 4. СЛАБЫЕ СИГНАЛЫ (четвёртый приоритет)
+    # MACD выше сигнальной, но гистограмма падает → слабый BULLISH (только если выше нуля)
+    if current_macd > current_signal and current_macd > 0 and current_histogram < prev_histogram:
+        return 'hold'  # Слишком слабый сигнал для входа
+
+    # MACD ниже сигнальной, но гистограмма растёт → слабый BEARISH (только если ниже нуля)
+    if current_macd < current_signal and current_macd < 0 and current_histogram > prev_histogram:
+        return 'hold'  # Слишком слабый сигнал для входа
 
     return 'hold'
 
@@ -108,15 +143,25 @@ def _get_stochastic_signal(high, low, close):
     """
     Индикатор #3: Stochastic Oscillator
 
-    Бычий сигнал: %K пересекает %D снизу вверх в зоне перепродажи (<20)
-    Медвежий сигнал: %K пересекает %D сверху вниз в зоне перекупленности (>80)
+    Бычий сигнал:
+    - %K пересекает %D снизу вверх в зоне перепродажи (<20)
+    - %K > %D и обе линии в зоне перепродажи (<20) — установившийся бычий
+
+    Медвежий сигнал:
+    - %K пересекает %D сверху вниз в зоне перекупленности (>80)
+    - %K < %D и обе линии в зоне перекупленности (>80) — установившийся медвежий
     """
     if len(close) < 14:
         return None
 
-    slowk, slowd = talib.STOCH(high, low, close, fastk_period=fastk_period, slowk_period=slowk_period, slowd_period=slowd_period)
+    slowk, slowd = talib.STOCH(
+        high, low, close,
+        fastk_period=fastk_period,
+        slowk_period=slowk_period,
+        slowd_period=slowd_period
+    )
 
-    # Берем последние 2 значения
+    # Берём последние значения
     current_k = slowk[-1]
     current_d = slowd[-1]
     prev_k = slowk[-2]
@@ -126,12 +171,40 @@ def _get_stochastic_signal(high, low, close):
             np.isnan(prev_k) or np.isnan(prev_d):
         return None
 
+    # 1. МОМЕНТ ПЕРЕСЕЧЕНИЯ (самый сильный сигнал)
     # %K пересекает %D снизу вверх в зоне перепродажи → BULLISH
     if prev_k <= prev_d and current_k > current_d and current_k < 20:
         return 'bullish'
 
     # %K пересекает %D сверху вниз в зоне перекупленности → BEARISH
-    elif prev_k >= prev_d and current_k < current_d and current_k > 80:
+    if prev_k >= prev_d and current_k < current_d and current_k > 80:
+        return 'bearish'
+
+    # 2. УСТАНОВИВШИЙСЯ ТРЕНД (после пересечения)
+    # %K выше %D и обе линии в зоне перепродажи (<20) → BULLISH
+    if current_k > current_d and current_k < 20 and current_d < 20:
+        return 'bullish'
+
+    # %K ниже %D и обе линии в зоне перекупленности (>80) → BEARISH
+    if current_k < current_d and current_k > 80 and current_d > 80:
+        return 'bearish'
+
+    # 3. ВЫХОД ИЗ ЗОНЫ (дополнительный сигнал)
+    # %K выходит из зоны перепродажи вверх (>20) → BULLISH
+    if prev_k < 20 and current_k > 20 and current_k > current_d:
+        return 'bullish'
+
+    # %K выходит из зоны перекупленности вниз (<80) → BEARISH
+    if prev_k > 80 and current_k < 80 and current_k < current_d:
+        return 'bearish'
+
+    # 4. НАПРАВЛЕНИЕ ДВИЖЕНИЯ (слабый сигнал)
+    # %K и %D растут и находятся ниже 50 → потенциальный BULLISH
+    if current_k > prev_k and current_d > prev_d and current_k < 50:
+        return 'bullish'
+
+    # %K и %D падают и находятся выше 50 → потенциальный BEARISH
+    if current_k < prev_k and current_d < prev_d and current_k > 50:
         return 'bearish'
 
     return 'hold'
