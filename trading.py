@@ -69,11 +69,23 @@ def main_trading_loop(exchange):
                 # 7. Проверяем наличие позиций
                 has_pos, pos_data = has_open_position(exchange, config.SYMBOL)
                 signal = consensus_signal
-                # ── НАДЗИРАЮЩИЙ ФИЛЬТР ────────────────────────────────────────────────
+                # ── НАДЗИРАЮЩИЙ ФИЛЬТР ─────────────────────────────────────────────[...]
                 current_price = float(close[-1])
 
-                long_check = is_near_historical_high(current_price, data, levels_data)
-                short_check = is_near_historical_low(current_price, data, levels_data)
+                long_check = is_near_historical_high(
+                    current_price, 
+                    data, 
+                    levels_data,
+                    atr_multiplier=config.ATR_MULTIPLIER,
+                    extreme_window=config.EXTREME_WINDOW
+                )
+                short_check = is_near_historical_low(
+                    current_price, 
+                    data, 
+                    levels_data,
+                    atr_multiplier=config.ATR_MULTIPLIER,
+                    extreme_window=config.EXTREME_WINDOW
+                )
 
                 long_allowed = not long_check['blocked']
                 short_allowed = not short_check['blocked']
@@ -83,7 +95,7 @@ def main_trading_loop(exchange):
                     logger.warning(f"🚫 LONG заблокирован: {long_check['reason']}")
                 if signal == 'bearish' and short_check['blocked']:
                     logger.warning(f"🚫 SHORT заблокирован: {short_check['reason']}")
-                # ─────────────────────────────────────────────────────────────────────
+                # ───────────────────────────────────────────────────────────────────[...]
                 # 8. Логика входа с учётом confidence
                 if not has_pos:
                     if signal is not None:
