@@ -116,7 +116,7 @@ def execute_trade(exchange, symbol, side):
                 if ts_response.get("retCode") == 0:
                     remaining = 100 - int(tpsl_size)
                     logger.info(
-                        f"✅ Трейлинг-стоп на {remaining}% | Дист: {config.TRAILING_STOP_DISTANCE} | Актив: {config.ACTIVE_PRICE:.2f}")
+                        f"✅ Трейлинг-стоп на {remaining}% | Дист: {config.TRAILING_STOP_DISTANCE} | Актив: {float(config.ACTIVE_PRICE):.2f}")
                 else:
                     logger.error(f"❌ Ошибка трейлинг-стопа: {ts_response.get('retMsg')}")
 
