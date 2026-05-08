@@ -110,19 +110,27 @@ def execute_trade(exchange, symbol, side):
             try:
                 bybit_symbol = symbol.replace('/', '').split(':')[0]
 
+                # ✅ Расчет activePrice в зависимости от направления позиции
+                # Для LONG (buy): activePrice должен быть выше entry_price
+                # Для SHORT (sell): activePrice должен быть выше entry_price (но ниже текущей цены)
+                if side == 'buy':
+                    active_price = ts_trigger_price * (1 + 0.1/100)  # На 0.1% выше
+                else:  # sell
+                    active_price = ts_trigger_price * (1 + 0.5/100)  # На 0.5% выше для SHORT
+
                 ts_response = session_bybit.set_trading_stop(
                     category="linear",
                     symbol=bybit_symbol,
                     positionIdx=0,
                     trailingStop=str(config.TRAILING_STOP_DISTANCE),
-                    activePrice=str(ts_trigger_price),
+                    activePrice=str(active_price),
                     #tpslMode="Partial"
                 )
 
                 if ts_response.get("retCode") == 0:
                     remaining = 100 - int(tpsl_size)
                     logger.info(
-                        f"✅ Трейлинг-стоп на {remaining}% | Дист: {config.TRAILING_STOP_DISTANCE} | Актив: {ts_trigger_price:.2f}")
+                        f"✅ Трейлинг-стоп на {remaining}% | Дист: {config.TRAILING_STOP_DISTANCE} | Актив: {active_price:.2f}")
                 else:
                     logger.error(f"❌ Ошибка трейлинг-стопа: {ts_response.get('retMsg')}")
 
