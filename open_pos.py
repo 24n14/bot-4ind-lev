@@ -128,7 +128,8 @@ def execute_trade(exchange, symbol, side):
                 )
 
                 if ts_response.get("retCode") == 0:
-                    remaining = 100 - int(tpsl_size)
+                    #remaining = 100 - int(tpsl_size)
+                    remaining = config.REMAINING  
                     logger.info(
                         f"✅ Трейлинг-стоп на {remaining}% | Дист: {config.TRAILING_STOP_DISTANCE} | Актив: {active_price:.2f}")
                 else:
