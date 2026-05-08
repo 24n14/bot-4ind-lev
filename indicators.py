@@ -9,9 +9,9 @@ fastperiod = config.FAST_macd
 slowperiod = config.SLOW_macd
 signalperiod = config.SIGNAL_macd
 # переменные STOCHASTIK
-fastk_period=config.FASTK
-slowk_period=config.SLOWK
-slowd_period=config.SLOWD
+fastk_period = config.FASTK
+slowk_period = config.SLOWK
+slowd_period = config.SLOWD
 def calculate_indicator_signals(high, low, close, volume):
 
     signals = {}

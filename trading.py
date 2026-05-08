@@ -130,40 +130,7 @@ def main_trading_loop(exchange):
                                 logger.warning(f"🛑 Разворот отклонён фильтром уровней")
                     else:
                         logger.debug(f"⌛ Позиция открыта ({pos_data['side'].upper()}), ожидаем...")
-                '''
-                # 8. Логика входа с учётом confidence
-                if not has_pos:
-                    if signal is not None:
-                        logger.info(f"📊 Сигнал: {signal.upper()}")
-                        if signal == 'bullish':
-                            logger.info(f"🟢 ВХОД В LONG")
-                            execute_trade(exchange, symbol, 'buy')
-                        elif signal == 'bearish':
-                            logger.info(f"🔴 ВХОД В SHORT")
-                            execute_trade(exchange, symbol, 'sell')
-                        else:
-                            logger.info(f"⚠️HOLD")
-                    else:
-                        logger.debug("📭 Сигнала нет")
 
-                elif has_pos:
-                    if is_absolute:
-                        # Разворот позиции
-                        if (signal == 'bearish' and pos_data['side'] == 'long') or \
-                                (signal == 'bullish' and pos_data['side'] == 'short'):
-                            logger.info(f"🔄 Обнаружен сигнал разворота")
-                            if signal == 'bullish':
-                                logger.info(f"🟢 ВХОД В LONG")
-                                execute_trade(exchange, symbol, 'buy')
-                                execute_trade(exchange, symbol, 'buy')
-                            elif signal == 'bearish':
-                                logger.info(f"🔴 ВХОД В SHORT")
-                                execute_trade(exchange, symbol, 'sell')
-                                execute_trade(exchange, symbol, 'sell')
-                            # Здесь логика закрытия и открытия противоположной позиции
-                    else:
-                        logger.debug(f"⌛ Позиция открыта ({pos_data['side'].upper()}), ожидаем...")
-                '''
                 # Небольшая пауза перед следующим циклом
                 time.sleep(5)
 

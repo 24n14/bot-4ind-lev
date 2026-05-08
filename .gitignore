@@ -3,4 +3,4 @@
 __pycache__/
 bot_history.log
 .idea/
- tests/
+tests/

@@ -1,4 +1,3 @@
-#import numpy as np
 import pandas as pd
 import config
 
@@ -46,12 +45,9 @@ def is_near_historical_high(
 
     # ✅ Берём только кластеры ВЫШЕ текущей цены (они — сопротивления)
     cluster_resistance = [lvl for lvl in levels_data['cluster_levels'] if lvl > current_price]
-    #resistance_levels = levels_data['resistance']  # уже отфильтрованы
     near_resistance = _near_level(
         current_price,
         cluster_resistance,
-        #levels_data['resistance'] + cluster_resistance,  # ✅ исправлено
-        #resistance_levels + cluster_resistance,
         tolerance
     )
     near_hist_high = dist_to_high <= tolerance
@@ -98,12 +94,9 @@ def is_near_historical_low(
 
     # ✅ Берём только кластеры НИЖЕ текущей цены (они — поддержки)
     cluster_support = [lvl for lvl in levels_data['cluster_levels'] if lvl < current_price]
-    #support_levels = levels_data['support']  # уже отфильтрованы
     near_support = _near_level(
         current_price,
         cluster_support,
-        #levels_data['support'] + cluster_support,
-        #support_levels + cluster_support,
         tolerance
     )
     near_hist_low = dist_to_low <= tolerance

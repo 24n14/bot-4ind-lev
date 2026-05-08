@@ -1,7 +1,8 @@
 import config
 from log import logger
 from pybit.unified_trading import HTTP
-#from start import min_amount
+
+
 # === Инициализация Pybit ===
 if config.DEMO_TRADING:
     session_bybit = HTTP(

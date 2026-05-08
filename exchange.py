@@ -4,8 +4,6 @@ import requests
 from log import logger
 
 
-
-
 def exchange_start():
     try:
         # ============= ПРОКСИ =============

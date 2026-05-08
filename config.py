@@ -23,8 +23,8 @@ STOP_LOSS = 0.7
 TAKE_PROFIT = 0.7
 TRAILING_STOP_DISTANCE = 300
 
-TS_TRIGGER_PRICE = 'entry_price' # 'entry_price' , 'take_profit_price' ,
-TPSL_SIZE = '100' # использует тейкпрофит, это его доля
+TS_TRIGGER_PRICE = 'entry_price'  # 'entry_price' , 'take_profit_price' ,
+TPSL_SIZE = '100'  # использует тейкпрофит, это его доля
 LEVERAGE = 10
 MIN_AMOUNT = 0.001
 MIN_CONFIDENCE = 0.5  # минимальная уверенность для входа
@@ -60,4 +60,4 @@ INDICATOR_WEIGHTS = {
 
 # ===== ДИАПАЗОН ДЛЯ БЛОКИРОВКИ ВБЛИЗИ ЭКСТРЕМУМОВ И УРОВНЕЙ ======
 ATR_MULTIPLIER = 1        # множитель ATR для зоны блокировки (0.5 = узко, 1.5 = широко)
-EXTREME_WINDOW = 30       # количество свечей для поиска локальных экстремумов
+EXTREME_WINDOW = 60     # количество свечей для поиска локальных экстремумов
