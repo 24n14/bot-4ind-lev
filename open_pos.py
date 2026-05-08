@@ -114,9 +114,9 @@ def execute_trade(exchange, symbol, side):
                 # Для LONG (buy): activePrice должен быть выше entry_price
                 # Для SHORT (sell): activePrice должен быть выше entry_price (но ниже текущей цены)
                 if side == 'buy':
-                    active_price = ts_trigger_price * (1 + 0.1/100)  # На 0.1% выше
+                    active_price = ts_trigger_price * (1 + 0.1/100)  # На 0.1% выше для LONG
                 else:  # sell
-                    active_price = ts_trigger_price * (1 + 0.5/100)  # На 0.5% выше для SHORT
+                    active_price = ts_trigger_price * (1 - 0.1/100)  # На 0.1% ниже для SHORT
 
                 ts_response = session_bybit.set_trading_stop(
                     category="linear",
